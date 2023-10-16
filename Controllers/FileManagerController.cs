@@ -136,6 +136,36 @@ namespace EJ2APIServices.Controllers
                         }
                     }
                 }
+                FileManagerResponse uploadResponse;
+                foreach (var file in uploadFiles)
+                {
+                    var folders = (file.FileName).Split('/');
+                    // checking the folder upload
+                    if (folders.Length > 1)
+                    {
+                        for (var i = 0; i < folders.Length - 1; i++)
+                        {
+                            string newDirectoryPath = Path.Combine(this.basePath + path, folders[i]);
+                            if (Path.GetFullPath(ValidatePath) != (Path.GetDirectoryName(ValidatePath) + Path.DirectorySeparatorChar))
+                            {
+                                throw new UnauthorizedAccessException("Access denied for Directory-traversal");
+                            }
+                            if (!Directory.Exists(newDirectoryPath))
+                            {
+                                this.operation.ToCamelCase(this.operation.Create(path, folders[i]));
+                            }
+                            path += folders[i] + "/";
+                        }
+                    }
+                }
+                uploadResponse = operation.Upload(path, uploadFiles, action, null);
+                if (uploadResponse.Error != null)
+                {
+                    Response.Clear();
+                    Response.ContentType = "application/json; charset=utf-8";
+                    Response.StatusCode = Convert.ToInt32(uploadResponse.Error.Code);
+                    Response.HttpContext.Features.Get<IHttpResponseFeature>().ReasonPhrase = uploadResponse.Error.Message;
+                }
             }
             catch (Exception e)
             {
@@ -146,32 +176,7 @@ namespace EJ2APIServices.Controllers
                 readResponse.Error = er;
                 return Content("");
             }
-            FileManagerResponse uploadResponse;
-            foreach (var file in uploadFiles)
-            {
-                var folders = (file.FileName).Split('/');
-                // checking the folder upload
-                if (folders.Length > 1)
-                {
-                    for (var i = 0; i < folders.Length - 1; i++)
-                    {
-                        string newDirectoryPath = Path.Combine(this.basePath + path, folders[i]);
-                        if (!Directory.Exists(newDirectoryPath))
-                        {
-                            this.operation.ToCamelCase(this.operation.Create(path, folders[i]));
-                        }
-                        path += folders[i] + "/";
-                    }
-                }
-            }
-            uploadResponse = operation.Upload(path, uploadFiles, action, null);
-            if (uploadResponse.Error != null)
-            {
-               Response.Clear();
-               Response.ContentType = "application/json; charset=utf-8";
-               Response.StatusCode = Convert.ToInt32(uploadResponse.Error.Code);
-               Response.HttpContext.Features.Get<IHttpResponseFeature>().ReasonPhrase = uploadResponse.Error.Message;
-            }
+
             return Content("");
         }
 
