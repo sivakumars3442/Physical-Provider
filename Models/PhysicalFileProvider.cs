@@ -2105,7 +2105,23 @@ namespace Syncfusion.EJ2.FileManager.PhysicalFileProvider
         }
         protected virtual bool IsDirectory(string path, string fileName)
         {
-            String fullPath = Path.Combine(path, fileName);
+			try
+			{
+				String fullPath = Path.Combine(path, fileName);
+				if(Path.GetFullPath(fullPath)!= GetFilePath(fullPath))
+				{
+					throw new UnauthorizedAccessException("Access denied for Directory-traversal");
+				}
+			}
+			catch (Exception e)
+            {
+                ErrorDetails er = new ErrorDetails();
+                er.Message = e.Message.ToString();
+                er.Code = er.Message.Contains("is not accessible. You need permission") ? "401" : "417";
+                if ((er.Code == "401") && !string.IsNullOrEmpty(accessMessage)) { er.Message = "Access denied for Directory-traversal"; }
+                readResponse.Error = er;
+                return readResponse;
+            }
             return ((File.GetAttributes(fullPath) & FileAttributes.Directory) != FileAttributes.Directory) ? false : true;
         }
         protected virtual bool HasPermission(Permission rule)
