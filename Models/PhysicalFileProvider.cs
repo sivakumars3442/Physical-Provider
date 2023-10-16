@@ -1594,6 +1594,10 @@ namespace Syncfusion.EJ2.FileManager.PhysicalFileProvider
                 if (names == null || names.Length == 0)
                 {
                     fullPath = (contentRootPath + path);
+                    if (Path.GetFullPath(fullPath) != GetFilePath(fullPath) + names[0])
+                    {
+                        throw new UnauthorizedAccessException("Access denied for Directory-traversal");
+                    }
                     byte[] bytes = System.IO.File.ReadAllBytes(fullPath);
                     FileStream fileStreamInput = new FileStream(fullPath, FileMode.Open, FileAccess.Read);
                     fileStreamResult = new FileStreamResult(fileStreamInput, "APPLICATION/octet-stream");
